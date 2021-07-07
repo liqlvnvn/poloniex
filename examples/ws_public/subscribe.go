@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	polo "github.com/iowar/poloniex"
+	polo "vcshl.b2broker.tech/common/golang-libs/poloniex"
 )
 
 func main() {
-
-	ws, err := polo.NewWSClient()
+	ws := polo.NewPublicWSClient()
+	err := ws.Run()
 	if err != nil {
 		return
 	}
@@ -18,12 +18,10 @@ func main() {
 	if err != nil {
 		return
 	}
-
 	go func() {
 		time.Sleep(time.Second * 10)
 		ws.UnsubscribeMarket("USDT_BTC")
 	}()
-
 	for {
 		fmt.Println(<-ws.Subs["USDT_BTC"])
 	}

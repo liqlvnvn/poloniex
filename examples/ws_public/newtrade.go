@@ -1,16 +1,16 @@
-//the following code shows
-//how to access NewTrade fields.
+// the following code shows
+// how to access NewTrade fields.
 package main
 
 import (
 	"fmt"
 
-	polo "github.com/iowar/poloniex"
+	polo "vcshl.b2broker.tech/common/golang-libs/poloniex"
 )
 
 func main() {
-
-	ws, err := polo.NewWSClient()
+	ws := polo.NewPublicWSClient()
+	err := ws.Run()
 	if err != nil {
 		return
 	}
@@ -29,7 +29,7 @@ func main() {
 			if v.TypeUpdate == "NewTrade" {
 				n = v.Data.(polo.NewTrade)
 				fmt.Printf("TradeId:%d, Rate:%f, Amount:%f, Total:%f, Type:%s\n",
-					n.TradeId, n.Rate, n.Amount, n.Total, n.TypeOrder)
+					n.TradeID, n.Rate, n.Amount, n.Total, n.TypeOrder)
 			}
 		}
 	}

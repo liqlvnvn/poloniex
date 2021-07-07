@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	polo "github.com/iowar/poloniex"
+	polo "vcshl.b2broker.tech/common/golang-libs/poloniex"
 )
 
 func main() {
-
-	ws, err := polo.NewWSClient()
+	ws := polo.NewPublicWSClient()
+	err := ws.Run()
 	if err != nil {
 		return
 	}

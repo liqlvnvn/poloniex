@@ -3,10 +3,7 @@ package poloniex
 import (
 	"encoding/json"
 	"strconv"
-	"time"
 )
-
-var ZeroTime = time.Time{}
 
 func intInSlice(a int, list []int) bool {
 	for _, b := range list {

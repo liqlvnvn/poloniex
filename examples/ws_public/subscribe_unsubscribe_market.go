@@ -5,11 +5,12 @@ import (
 	"log"
 	"time"
 
-	polo "github.com/iowar/poloniex"
+	polo "vcshl.b2broker.tech/common/golang-libs/poloniex"
 )
 
 func main() {
-	ws, err := polo.NewWSClient()
+	ws := polo.NewPublicWSClient()
+	err := ws.Run()
 	if err != nil {
 		return
 	}
@@ -39,5 +40,5 @@ func main() {
 		return
 	}
 	log.Print("Subscribed to USDT_BTC channel.")
-	time.Sleep(time.Second * 50)
+	time.Sleep(time.Second * 10)
 }

@@ -1,21 +1,61 @@
-# Poloniex API GO
-[![GoDoc](https://godoc.org/github.com/iowar/poloniex?status.svg)](https://godoc.org/github.com/iowar/poloniex)
+# Poloniex Go
 
-Poloniex Push, Public and Trading APIs.
-# Install
-~~~sh
-$ go get -u github.com/iowar/poloniex
-~~~ 
+Poloniex Websocket, Public and Private APIs.
 
-# APIs
+## Related URL's
+
+- [Poloniex API docs](https://docs.poloniex.com/)
+- [Confluence]()
+
+## Websocket Private
+Create websocket client.
+#### NewAuthenticatedWSClient()
 ~~~go
-import polo "github.com/iowar/poloniex"
+ws := poloniex.NewPrivateWSClient(apiKey, apiSecret)
+err := ws.Run()
+if err != nil {
+    return
+}
 ~~~
-## Push Api
+* Methods
+  * SubscribeAccount()
+  * UnsubscribeAccount()
+  
+#### SubscribeAccount()
+~~~go
+err = ws.SubscribeAccount()
+if err != nil {
+    return
+}
+for {
+    fmt.Println(<-ws.Subs["ACCOUNT"])
+}
+~~~
+#### UnsubscribeAccount()
+~~~go
+err = ws.SubscribeAccount()
+go func() {
+    time.Sleep(time.Second * 10)
+    ws.UnsubscribeAccount()
+}()
+~~~
+#### ListeningReports()
+~~~go
+ch, _ := ws.ListeningReports()
+for {
+    fmt.Println(<-ch)
+}
+~~~
+
+### Examples
+* See `./example/ws_private`
+
+## Websocket Public
 Create websocket client.
 #### NewWSClient()
 ~~~go
-ws, err := polo.NewWSClient()
+ws := poloniex.NewPublicWSClient()
+err := ws.Run()
 if err != nil {
     return
 }
@@ -25,8 +65,7 @@ if err != nil {
     * SubscribeMarket()
     * UnsubscribeTicker()
     * UnsubscribeMarket()
-
-
+  
 ### Ticker
 #### SubscribeTicker()
 ~~~go
@@ -77,11 +116,11 @@ for {
 ~~~~
 
 ### Examples
-* See [Push Api Examples](https://github.com/iowar/poloniex/tree/master/examples/push)
+* See `./example/ws_public`
 
 ## Public Api
 ~~~go
-poloniex, err := polo.NewClient(api_key, api_secret)
+poloniex, err := poloniex.NewClient(api_key, api_secret)
 ~~~
 * Public Api Methods
     * GetTickers()
@@ -100,17 +139,17 @@ if err != nil{
 }
 fmt.Println(resp)
 ~~~
-* See [Public Api Examples](https://github.com/iowar/poloniex/tree/master/examples/public)
+* See `./example/public_api`
 
-## Trading Api
+## Private Api
 ~~~go
 const (
-        api_key    = ""
-        api_secret = ""
+        APIKey    = ""
+        APISecret = ""
 )
 ~~~
 ~~~go
-poloniex, err := polo.NewClient(api_key, api_secret)
+poloniex, err := poloniex.NewClient(api_key, api_secret)
 ~~~ 
 
 * Trading Api Methods
@@ -137,9 +176,4 @@ if err != nil{
 }
 fmt.Println(resp)
 ~~~
-* See [Trading Api Examples](https://github.com/iowar/poloniex/tree/master/examples/trading)
-
-License
-----
-[MIT](https://github.com/iowar/poloniex/blob/master/LICENSE)
-
+* See `./example/private_api`

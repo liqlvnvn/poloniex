@@ -2,6 +2,7 @@ package poloniex
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,26 +12,26 @@ import (
 )
 
 type Ticker struct {
-	ID            int             `json:"id, int"`
-	Last          decimal.Decimal `json:"last, string"`
-	LowestAsk     decimal.Decimal `json:"lowestAsk, string"`
-	HighestBid    decimal.Decimal `json:"highestBid, string"`
-	PercentChange decimal.Decimal `json:"percentChange, string"`
-	BaseVolume    decimal.Decimal `json:"baseVolume, string"`
-	QuoteVolume   decimal.Decimal `json:"quoteVolume, string"`
-	IsFrozen      int             `json:"isFrozen ,string"`
-	High24hr      decimal.Decimal `json:"high24hr, string"`
-	Low24hr       decimal.Decimal `json:"low24hr, string"`
+	ID            int             `json:"id"`
+	Last          decimal.Decimal `json:"last"`
+	LowestAsk     decimal.Decimal `json:"lowestAsk"`
+	HighestBid    decimal.Decimal `json:"highestBid"`
+	PercentChange decimal.Decimal `json:"percentChange"`
+	BaseVolume    decimal.Decimal `json:"baseVolume"`
+	QuoteVolume   decimal.Decimal `json:"quoteVolume"`
+	IsFrozen      int             `json:"isFrozen,string"`
+	High24hr      decimal.Decimal `json:"high24hr"`
+	Low24hr       decimal.Decimal `json:"low24hr"`
 }
 
 func (p *Poloniex) GetTickers() (tickers map[string]Ticker, err error) {
-	respch := make(chan []byte)
-	errch := make(chan error)
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
-	go p.publicRequest("returnTicker", respch, errch)
+	go p.publicRequest("returnTicker", respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
@@ -42,18 +43,17 @@ func (p *Poloniex) GetTickers() (tickers map[string]Ticker, err error) {
 
 type Volume struct {
 	Volumes   map[string]map[string]decimal.Decimal
-	TotalBTC  float64 `json:"totalBTC, string"`
-	TotalETH  float64 `json:"totalETH, string"`
-	TotalUSDC float64 `json:"totalUSDC, string"`
-	TotalUSDT float64 `json:"totalUSDT, string"`
-	TotalXMR  float64 `json:"totalXMR, string"`
-	TotalXUSD float64 `json:"totalXUSD, string"`
+	TotalBTC  float64 `json:"totalBTC,string"`
+	TotalETH  float64 `json:"totalETH,string"`
+	TotalUSDC float64 `json:"totalUSDC,string"`
+	TotalUSDT float64 `json:"totalUSDT,string"`
+	TotalXMR  float64 `json:"totalXMR,string"`
+	TotalXUSD float64 `json:"totalXUSD,string"`
 }
 
 func (v *Volume) UnmarshalJSON(b []byte) error {
 	rmsg := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &rmsg)
-	if err != nil {
+	if err := json.Unmarshal(b, &rmsg); err != nil {
 		return err
 	}
 
@@ -119,17 +119,17 @@ func (v *Volume) UnmarshalJSON(b []byte) error {
 		}
 	}
 
-	return err
+	return nil
 }
 
 func (p *Poloniex) Get24hVolumes() (volumes Volume, err error) {
-	respch := make(chan []byte)
-	errch := make(chan error)
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
-	go p.publicRequest("return24hVolume", respch, errch)
+	go p.publicRequest("return24hVolume", respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
@@ -137,7 +137,6 @@ func (p *Poloniex) Get24hVolumes() (volumes Volume, err error) {
 
 	err = json.Unmarshal(resp, &volumes)
 	return
-
 }
 
 type Book struct {
@@ -171,14 +170,14 @@ type OrderBook struct {
 }
 
 func (p *Poloniex) GetOrderBook(market string, depth int) (orderbook OrderBook, err error) {
-	respch := make(chan []byte)
-	errch := make(chan error)
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
 	go p.publicRequest(fmt.Sprintf("returnOrderBook&currencyPair=%s&depth=%d",
-		strings.ToUpper(market), depth), respch, errch)
+		strings.ToUpper(market), depth), respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
@@ -191,16 +190,16 @@ func (p *Poloniex) GetOrderBook(market string, depth int) (orderbook OrderBook, 
 type PublicTrade struct {
 	GlobalTradeID uint64          `json:"globalTradeID"`
 	TradeID       uint64          `json:"tradeID"`
-	Date          string          `json:"date, string"`
-	Type          string          `json:"type, string"`
-	Rate          decimal.Decimal `json:"rate, string"`
-	Amount        decimal.Decimal `json:"amount, string"`
-	Total         decimal.Decimal `json:"total, string"`
+	Date          string          `json:"date,string"`
+	Type          string          `json:"type,string"`
+	Rate          decimal.Decimal `json:"rate"`
+	Amount        decimal.Decimal `json:"amount"`
+	Total         decimal.Decimal `json:"total"`
 }
 
 func (p *Poloniex) GetPublicTradeHistory(market string, args ...time.Time) (trades []PublicTrade, err error) {
-	respch := make(chan []byte)
-	errch := make(chan error)
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
 	action := fmt.Sprintf("returnTradeHistory&currencyPair=%s", strings.ToUpper(market))
 
@@ -208,10 +207,10 @@ func (p *Poloniex) GetPublicTradeHistory(market string, args ...time.Time) (trad
 		action += fmt.Sprintf("&start=%d&end=%d", args[0].Unix(), args[1].Unix())
 	}
 
-	go p.publicRequest(action, respch, errch)
+	go p.publicRequest(action, respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
@@ -256,42 +255,43 @@ func (p *Poloniex) GetChartData(market string, start, end time.Time, period stri
 	action := fmt.Sprintf("returnChartData&currencyPair=%s",
 		strings.ToUpper(market))
 
-	if start.IsZero() == false && end.IsZero() == false {
+	switch {
+	case !start.IsZero() && !end.IsZero():
 		v1 = start.Unix()
 		v2 = end.Unix()
 
-		if int((v2 - v1)) < periodSec {
+		if int(v2-v1) < periodSec {
 			return nil, Error(TimePeriodError)
 		}
-
-	} else if start.IsZero() == true && end.IsZero() == true {
+	case start.IsZero() && end.IsZero():
 		v1 = time.Now().AddDate(0, 0, -1).Unix()
 		v2 = time.Now().Unix()
-	} else {
+	default:
 		return nil, Error(TimeError)
 	}
 
-	respch := make(chan []byte)
-	errch := make(chan error)
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
 	action += fmt.Sprintf("&start=%d&end=%d&period=%d",
 		v1, v2, periodSec)
 
-	go p.publicRequest(action, respch, errch)
+	go p.publicRequest(action, respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
-
-	if err != nil {
+	resp := <-respCh
+	if err = <-errCh; err != nil {
 		return
 	}
 
-	err = json.Unmarshal(resp, &candles)
-	return
+	if err = json.Unmarshal(resp, &candles); err != nil {
+		return nil, errors.New("can't unmarshal candles while getting chart data")
+	}
+
+	return candles, nil
 }
 
 type Currency struct {
-	Id             int             `json:"id"`
+	ID             int             `json:"id"`
 	Name           string          `json:"name"`
 	TxFee          decimal.Decimal `json:"txFee"`
 	MinConf        decimal.Decimal `json:"minConf"`
@@ -302,13 +302,13 @@ type Currency struct {
 }
 
 func (p *Poloniex) GetCurrencies() (currencies map[string]Currency, err error) {
-	respch := make(chan []byte)
-	errch := make(chan error)
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
-	go p.publicRequest("returnCurrencies", respch, errch)
+	go p.publicRequest("returnCurrencies", respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
@@ -319,8 +319,8 @@ func (p *Poloniex) GetCurrencies() (currencies map[string]Currency, err error) {
 }
 
 type LoanOrderSc struct {
-	Rate     decimal.Decimal `json:"rate, string"`
-	Amount   decimal.Decimal `json:"amount, string"`
+	Rate     decimal.Decimal `json:"rate"`
+	Amount   decimal.Decimal `json:"amount"`
 	RangeMin int             `json:"rangeMin"`
 	RangeMax int             `json:"rangeMax"`
 }
@@ -330,20 +330,20 @@ type LoanOrder struct {
 	Demands []LoanOrderSc `json:"demands"`
 }
 
-func (p *Poloniex) GetLoanOrders(currency string) (loanorders LoanOrder, err error) {
-	respch := make(chan []byte)
-	errch := make(chan error)
+func (p *Poloniex) GetLoanOrders(currency string) (loanOrder LoanOrder, err error) {
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
 	action := fmt.Sprintf("returnLoanOrders&currency=%s", currency)
-	go p.publicRequest(action, respch, errch)
+	go p.publicRequest(action, respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
 	}
 
-	err = json.Unmarshal(resp, &loanorders)
+	err = json.Unmarshal(resp, &loanOrder)
 	return
 }

@@ -1,16 +1,16 @@
-//the following code shows
-//how to access OrderBook fields.
+// the following code shows
+// how to access OrderBook fields.
 package main
 
 import (
 	"fmt"
 
-	polo "github.com/iowar/poloniex"
+	polo "vcshl.b2broker.tech/common/golang-libs/poloniex"
 )
 
 func main() {
-
-	ws, err := polo.NewWSClient()
+	ws := polo.NewPublicWSClient()
+	err := ws.Run()
 	if err != nil {
 		return
 	}

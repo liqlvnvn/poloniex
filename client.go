@@ -11,17 +11,24 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (
-	origin        = "https://api2.poloniex.com/"
-	pushAPIUrl    = "wss://api2.poloniex.com/realm1"
+	// origin        = "https://api2.poloniex.com/"
+	// pushAPIUrl    = "wss://api2.poloniex.com/realm1"
+	pushAPIUrl = "wss://api2.poloniex.com"
+
 	publicAPIUrl  = "https://poloniex.com/public?command="
 	tradingAPIUrl = "https://poloniex.com/tradingApi"
 )
 
 var (
-	throttle = time.Tick(time.Second / 5)
+	logger = logrus.WithField("lib", "poloniex").WithField("module", "ws account notification")
+
+	// throttle = time.Tick(time.Second / 5)
+	throttle = time.NewTicker(time.Second / 5).C
 )
 
 type Poloniex struct {
@@ -41,16 +48,16 @@ func NewClient(key, secret string) (client *Poloniex, err error) {
 }
 
 // Create public api request.
-func (p *Poloniex) publicRequest(action string, respch chan<- []byte, errch chan<- error) {
-	defer close(respch)
-	defer close(errch)
+func (p *Poloniex) publicRequest(action string, respCh chan<- []byte, errCh chan<- error) {
+	defer close(respCh)
+	defer close(errCh)
 
-	rawurl := publicAPIUrl + action
+	rawURL := publicAPIUrl + action
 
-	req, err := http.NewRequest("GET", rawurl, nil)
+	req, err := http.NewRequest("GET", rawURL, nil)
 	if err != nil {
-		respch <- nil
-		errch <- Error(RequestError)
+		respCh <- nil
+		errCh <- Error(RequestError)
 		return
 	}
 
@@ -59,37 +66,21 @@ func (p *Poloniex) publicRequest(action string, respch chan<- []byte, errch chan
 	<-throttle
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
-		respch <- nil
-		errch <- Error(ConnectError)
+		respCh <- nil
+		errCh <- Error(ConnectError)
 		return
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		respch <- body
-		errch <- err
+		respCh <- body
+		errCh <- err
 		return
 	}
 
-	respch <- body
-	errch <- nil
-}
-
-func (p *Poloniex) sign(formData string) (Sign string, err error) {
-	if len(p.key) == 0 || len(p.secret) == 0 {
-		err = Error(SetApiError)
-		return
-	}
-
-	mac := hmac.New(sha512.New, []byte(p.secret))
-	_, err = mac.Write([]byte(formData))
-	if err != nil {
-		return
-	}
-
-	Sign = hex.EncodeToString(mac.Sum(nil))
-	return
+	respCh <- body
+	errCh <- nil
 }
 
 type checkErr struct {
@@ -105,17 +96,17 @@ func checkServerError(response []byte) error {
 	}
 	if check.Error != "" {
 		return Error(ServerError, check.Error)
-	} else {
-		return nil
 	}
+
+	return nil
 }
 
 // Create trading api request.
 func (p *Poloniex) tradingRequest(action string, parameters map[string]string,
-	respch chan<- []byte, errch chan<- error) {
+	respCh chan<- []byte, errCh chan<- error) {
 
-	defer close(respch)
-	defer close(errch)
+	defer close(respCh)
+	defer close(errCh)
 
 	if parameters == nil {
 		parameters = make(map[string]string)
@@ -133,16 +124,16 @@ func (p *Poloniex) tradingRequest(action string, parameters map[string]string,
 
 	sign, err := p.sign(formData)
 	if err != nil {
-		respch <- nil
-		errch <- err
+		respCh <- nil
+		errCh <- err
 		return
 	}
 
 	req, err := http.NewRequest("POST", tradingAPIUrl,
 		strings.NewReader(formData))
 	if err != nil {
-		respch <- nil
-		errch <- Error(RequestError)
+		respCh <- nil
+		errCh <- Error(RequestError)
 		return
 	}
 
@@ -154,25 +145,41 @@ func (p *Poloniex) tradingRequest(action string, parameters map[string]string,
 	<-throttle
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
-		respch <- nil
-		errch <- Error(ConnectError)
+		respCh <- nil
+		errCh <- Error(ConnectError)
 		return
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		respch <- body
-		errch <- err
+		respCh <- body
+		errCh <- err
 		return
 	}
 
 	err = checkServerError(body)
 	if err != nil {
-		respch <- nil
-		errch <- err
+		respCh <- nil
+		errCh <- err
 	}
 
-	respch <- body
-	errch <- nil
+	respCh <- body
+	errCh <- nil
+}
+
+func (p *Poloniex) sign(formData string) (signature string, err error) {
+	if p.key == "" || p.secret == "" {
+		err = Error(SetAPIError)
+		return
+	}
+
+	mac := hmac.New(sha512.New, []byte(p.secret))
+	_, err = mac.Write([]byte(formData))
+	if err != nil {
+		return
+	}
+
+	signature = hex.EncodeToString(mac.Sum(nil))
+	return
 }

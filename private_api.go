@@ -10,14 +10,20 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+type Balance struct {
+	Available decimal.Decimal `json:"available"`
+	OnOrders  decimal.Decimal `json:"onOrders"`
+	BtcValue  decimal.Decimal `json:"btcValue"`
+}
+
 func (p *Poloniex) GetBalances() (balances map[string]string, err error) {
-	respch := make(chan []byte)
-	errch := make(chan error)
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
-	go p.tradingRequest("returnBalances", nil, respch, errch)
+	go p.tradingRequest("returnBalances", nil, respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
@@ -27,26 +33,20 @@ func (p *Poloniex) GetBalances() (balances map[string]string, err error) {
 	return
 }
 
-type Balance struct {
-	Available decimal.Decimal `json:"available, string"`
-	OnOrders  decimal.Decimal `json:"onOrders, string"`
-	BtcValue  decimal.Decimal `json:"btcValue, string"`
-}
+func (p *Poloniex) GetCompleteBalances() (completeBalances map[string]Balance, err error) {
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
-func (p *Poloniex) GetCompleteBalances() (completebalances map[string]Balance, err error) {
-	respch := make(chan []byte)
-	errch := make(chan error)
+	go p.tradingRequest("returnCompleteBalances", nil, respCh, errCh)
 
-	go p.tradingRequest("returnCompleteBalances", nil, respch, errch)
-
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
 	}
 
-	err = json.Unmarshal(resp, &completebalances)
+	err = json.Unmarshal(resp, &completeBalances)
 	return
 }
 
@@ -57,13 +57,13 @@ type Accounts struct {
 }
 
 func (p *Poloniex) GetAccountBalances() (accounts Accounts, err error) {
-	respch := make(chan []byte)
-	errch := make(chan error)
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
-	go p.tradingRequest("returnAvailableAccountBalances", nil, respch, errch)
+	go p.tradingRequest("returnAvailableAccountBalances", nil, respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
@@ -73,99 +73,99 @@ func (p *Poloniex) GetAccountBalances() (accounts Accounts, err error) {
 	return
 }
 
-func (p *Poloniex) GetDepositAddresses() (depositaddresses map[string]string, err error) {
-	respch := make(chan []byte)
-	errch := make(chan error)
-
-	go p.tradingRequest("returnDepositAddresses", nil, respch, errch)
-
-	resp := <-respch
-	err = <-errch
-
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(resp, &depositaddresses)
-	return
-}
-
 type NewAddress struct {
 	Success  int    `json:"success"`
 	Response string `json:"response"`
 }
 
-func (p *Poloniex) GenerateNewAddress(currency string) (newaddress NewAddress, err error) {
-	respch := make(chan []byte)
-	errch := make(chan error)
+func (p *Poloniex) GetDepositAddresses() (depositAddresses map[string]string, err error) {
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
-	parameters := map[string]string{"currency": strings.ToUpper(currency)}
-	go p.tradingRequest("generateNewAddress", parameters, respch, errch)
+	go p.tradingRequest("returnDepositAddresses", nil, respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
 	}
 
-	err = json.Unmarshal(resp, &newaddress)
+	err = json.Unmarshal(resp, &depositAddresses)
+	return
+}
+
+func (p *Poloniex) GenerateNewAddress(currency string) (newAddress NewAddress, err error) {
+	respCh := make(chan []byte)
+	errCh := make(chan error)
+
+	parameters := map[string]string{"currency": strings.ToUpper(currency)}
+	go p.tradingRequest("generateNewAddress", parameters, respCh, errCh)
+
+	resp := <-respCh
+	err = <-errCh
+
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(resp, &newAddress)
 	return
 }
 
 type OpenOrder struct {
 	OrderNumber    string          `json:"orderNumber"`
 	Type           string          `json:"type"`
-	Price          decimal.Decimal `json:"rate, string"`
-	StartingAmount decimal.Decimal `json:"startingAmount, string"`
-	Amount         decimal.Decimal `json:"amount, string"`
-	Total          decimal.Decimal `json:"total, string"`
+	Price          decimal.Decimal `json:"rate"`
+	StartingAmount decimal.Decimal `json:"startingAmount"`
+	Amount         decimal.Decimal `json:"amount"`
+	Total          decimal.Decimal `json:"total"`
 	Date           string          `json:"date"`
 	Margin         int             `json:"margin"`
 }
 
-// Send market to get open orders.
-func (p *Poloniex) GetOpenOrders(market string) (openorders []OpenOrder, err error) {
-	respch := make(chan []byte)
-	errch := make(chan error)
+// GetOpenOrders is send market to get open orders.
+func (p *Poloniex) GetOpenOrders(market string) (openOrders []OpenOrder, err error) {
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
 	parameters := map[string]string{"currencyPair": strings.ToUpper(market)}
-	go p.tradingRequest("returnOpenOrders", parameters, respch, errch)
+	go p.tradingRequest("returnOpenOrders", parameters, respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
 	}
 
-	err = json.Unmarshal(resp, &openorders)
+	err = json.Unmarshal(resp, &openOrders)
 	return
 }
 
-// This method returns all open orders.
-func (p *Poloniex) GetAllOpenOrders() (openorders map[string][]OpenOrder, err error) {
-	respch := make(chan []byte)
-	errch := make(chan error)
+// GetAllOpenOrders returns all open orders.
+func (p *Poloniex) GetAllOpenOrders() (openOrders map[string][]OpenOrder, err error) {
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
 	parameters := map[string]string{"currencyPair": "all"}
-	go p.tradingRequest("returnOpenOrders", parameters, respch, errch)
+	go p.tradingRequest("returnOpenOrders", parameters, respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
 	}
 
-	err = json.Unmarshal(resp, &openorders)
+	err = json.Unmarshal(resp, &openOrders)
 	if err != nil {
 		return
 	}
 
-	for k, v := range openorders {
+	for k, v := range openOrders {
 		if len(v) == 0 {
-			delete(openorders, k)
+			delete(openOrders, k)
 		}
 	}
 	return
@@ -176,14 +176,14 @@ type CancelOrder struct {
 }
 
 func (p *Poloniex) CancelOrder(orderNumber string) (cancelorder CancelOrder, err error) {
-	respch := make(chan []byte)
-	errch := make(chan error)
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
 	parameters := map[string]string{"orderNumber": orderNumber}
-	go p.tradingRequest("cancelOrder", parameters, respch, errch)
+	go p.tradingRequest("cancelOrder", parameters, respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
@@ -197,11 +197,11 @@ type TradeHistory struct {
 	GlobalTradeID int             `json:"globalTradeId"`
 	TradeID       string          `json:"tradeId"`
 	Date          string          `json:"date"`
-	Price         decimal.Decimal `json:"rate, string"`
-	Amount        decimal.Decimal `json:"amount, string"`
-	Total         decimal.Decimal `json:"total, string"`
-	Fee           decimal.Decimal `json:"fee,string"`
-	OrderNumber   decimal.Decimal `json:"orderNumber,string"`
+	Price         decimal.Decimal `json:"rate"`
+	Amount        decimal.Decimal `json:"amount"`
+	Total         decimal.Decimal `json:"total"`
+	Fee           decimal.Decimal `json:"fee"`
+	OrderNumber   decimal.Decimal `json:"orderNumber"`
 	Type          string          `json:"type"`
 	Category      string          `json:"category"`
 }
@@ -214,13 +214,13 @@ func (p *Poloniex) GetTradeHistory(market string, start, end time.Time, limit in
 		"limit":        strconv.Itoa(limit),
 	}
 
-	respch := make(chan []byte)
-	errch := make(chan error)
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
-	go p.tradingRequest("returnTradeHistory", parameters, respch, errch)
+	go p.tradingRequest("returnTradeHistory", parameters, respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
@@ -243,14 +243,14 @@ type OrderTrade struct {
 }
 
 func (p *Poloniex) GetTradesByOrderID(orderNumber string) (ordertrades []OrderTrade, err error) {
-	respch := make(chan []byte)
-	errch := make(chan error)
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
 	parameters := map[string]string{"orderNumber": orderNumber}
-	go p.tradingRequest("returnOrderTrades", parameters, respch, errch)
+	go p.tradingRequest("returnOrderTrades", parameters, respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
@@ -271,7 +271,7 @@ type OrderStat struct {
 	StartingAmount decimal.Decimal `json:"startingAmount"`
 }
 
-// error result
+// OrderStat1 represent error result
 type OrderStat1 struct {
 	Success int `json:"success"`
 	Result  struct {
@@ -279,24 +279,24 @@ type OrderStat1 struct {
 	} `json:"result"`
 }
 
-// success result
+// OrderStat2 represent success result
 type OrderStat2 struct {
 	Success int                  `json:"success"`
 	Result  map[string]OrderStat `json:"result"`
 }
 
-func (p *Poloniex) GetOrderStat(orderNumber string) (orderstat OrderStat, err error) {
+func (p *Poloniex) GetOrderStat(orderNumber string) (orderStat OrderStat, err error) {
 	var check1 OrderStat1
 	var check2 OrderStat2
 
-	respch := make(chan []byte)
-	errch := make(chan error)
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
 	parameters := map[string]string{"orderNumber": orderNumber}
-	go p.tradingRequest("returnOrderStatus", parameters, respch, errch)
+	go p.tradingRequest("returnOrderStatus", parameters, respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
@@ -319,12 +319,11 @@ func (p *Poloniex) GetOrderStat(orderNumber string) (orderstat OrderStat, err er
 		return
 	}
 	if check2.Success == 1 {
-		orderstat = check2.Result[orderNumber]
+		orderStat = check2.Result[orderNumber]
 		return
 	}
 
-	err = errors.New("Unexpected Result!")
-	return
+	return orderStat, errors.New("unexpected result")
 }
 
 type ResultTrades struct {
@@ -344,17 +343,17 @@ type Buy struct {
 func (p *Poloniex) Buy(market string, price, amount float64) (buy Buy, err error) {
 	parameters := map[string]string{
 		"currencyPair": strings.ToUpper(market),
-		"rate":         strconv.FormatFloat(float64(price), 'f', 8, 64),
-		"amount":       strconv.FormatFloat(float64(amount), 'f', 8, 64),
+		"rate":         strconv.FormatFloat(price, 'f', 8, 64),
+		"amount":       strconv.FormatFloat(amount, 'f', 8, 64),
 	}
 
-	respch := make(chan []byte)
-	errch := make(chan error)
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
-	go p.tradingRequest("buy", parameters, respch, errch)
+	go p.tradingRequest("buy", parameters, respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
@@ -369,17 +368,17 @@ type Sell Buy
 func (p *Poloniex) Sell(market string, price, amount float64) (sell Sell, err error) {
 	parameters := map[string]string{
 		"currencyPair": strings.ToUpper(market),
-		"rate":         strconv.FormatFloat(float64(price), 'f', 8, 64),
-		"amount":       strconv.FormatFloat(float64(amount), 'f', 8, 64),
+		"rate":         strconv.FormatFloat(price, 'f', 8, 64),
+		"amount":       strconv.FormatFloat(amount, 'f', 8, 64),
 	}
 
-	respch := make(chan []byte)
-	errch := make(chan error)
+	respCh := make(chan []byte)
+	errCh := make(chan error)
 
-	go p.tradingRequest("sell", parameters, respch, errch)
+	go p.tradingRequest("sell", parameters, respCh, errCh)
 
-	resp := <-respch
-	err = <-errch
+	resp := <-respCh
+	err = <-errCh
 
 	if err != nil {
 		return
