@@ -121,7 +121,7 @@ for {
 
 ## Public Api
 ~~~go
-poloniex, err := poloniex.NewClient(api_key, api_secret)
+poloniex := poloniex.NewPublicClient()
 ~~~
 * Public Api Methods
     * GetTickers()
@@ -150,7 +150,7 @@ const (
 )
 ~~~
 ~~~go
-poloniex, err := poloniex.NewClient(api_key, api_secret)
+poloniex, err := poloniex.NewPrivateClient(api_key, api_secret)
 ~~~ 
 
 * Trading Api Methods

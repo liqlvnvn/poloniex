@@ -37,14 +37,18 @@ type Poloniex struct {
 	httpClient *http.Client
 }
 
-func NewClient(key, secret string) (client *Poloniex, err error) {
-	client = &Poloniex{
+func NewPublicClient() *Poloniex {
+	return &Poloniex{
+		httpClient: &http.Client{Timeout: time.Second * 10},
+	}
+}
+
+func NewPrivateClient(key, secret string) *Poloniex {
+	return &Poloniex{
 		key:        key,
 		secret:     secret,
 		httpClient: &http.Client{Timeout: time.Second * 10},
 	}
-
-	return
 }
 
 // Create public api request.

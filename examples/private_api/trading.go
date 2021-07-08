@@ -12,7 +12,7 @@ const (
 )
 
 func main() {
-	poloniex, err := polo.NewClient(api_key, api_secret)
+	poloniex := polo.NewPrivateClient(api_key, api_secret)
 
 	resp, err := poloniex.GetBalances()
 	// resp, err := poloniex.GetCompleteBalances()
