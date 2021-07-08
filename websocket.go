@@ -31,6 +31,7 @@ var (
 type WSClient struct {
 	key        string
 	secret     string
+	observer   OrderObserver
 	Subs       map[string]chan interface{} // subscriptions map
 	wsConn     *websocket.Conn             // websocket connection
 	wsMutex    *sync.Mutex                 // prevent race condition for websocket RW
@@ -46,12 +47,13 @@ func NewPublicWSClient() *WSClient {
 }
 
 // NewPrivateWSClient creates new web socket private client.
-func NewPrivateWSClient(key, secret string) *WSClient {
+func NewPrivateWSClient(observer OrderObserver, key, secret string) *WSClient {
 	return &WSClient{
-		key:     key,
-		secret:  secret,
-		Subs:    make(map[string]chan interface{}),
-		wsMutex: &sync.Mutex{},
+		key:      key,
+		secret:   secret,
+		observer: observer,
+		Subs:     make(map[string]chan interface{}),
+		wsMutex:  &sync.Mutex{},
 	}
 }
 
@@ -108,10 +110,7 @@ func (ws *WSClient) writeMessage(msg []byte) error {
 }
 
 func setChannelsID() (err error) {
-	publicAPI, err := NewClient("", "")
-	if err != nil {
-		return err
-	}
+	publicAPI := NewPublicClient()
 
 	tickers, err := publicAPI.GetTickers()
 	if err != nil {

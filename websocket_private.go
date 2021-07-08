@@ -87,21 +87,39 @@ type AccountUpdate struct {
 }
 
 // ListeningReports make subscription to account executed orders notification.
-func (ws *WSClient) ListeningReports() (ch chan Trade, err error) {
+func (ws *WSClient) ListeningReports() (ch chan Fill, err error) {
 	if _, isClientSubscribedToAccountNotification := ws.Subs["ACCOUNT"]; !isClientSubscribedToAccountNotification {
 		if err := ws.subscribeToAccountNotification(ACCOUNT, "ACCOUNT"); err != nil {
 			return nil, err
 		}
 	}
 
-	ch = make(chan Trade, SUBSBUFFER)
+	ch = make(chan Fill, SUBSBUFFER)
 
-	go func(ch chan Trade) {
+	go func(ch chan Fill) {
 		for updates := range ws.Subs["ACCOUNT"] {
 			for _, msg := range updates.([]AccountUpdate) {
 				switch msg.TypeUpdate {
 				case "Trade":
-					ch <- msg.Data.(Trade)
+					trade := msg.Data.(Trade)
+					if ws.observer.IsObservable(trade.OrderNumber) {
+						servObj, err := ws.observer.Items(trade.OrderNumber)
+						if err != nil {
+							return
+						}
+
+						f := Fill{
+							trade.OrderNumber,
+							trade.TradeID,
+							servObj.symbol,
+							trade.Rate,
+							trade.Amount,
+							servObj.side,
+							trade.Date,
+						}
+
+						ch <- f
+					}
 				default:
 					continue
 				}

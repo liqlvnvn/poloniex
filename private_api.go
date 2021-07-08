@@ -360,6 +360,9 @@ func (p *Poloniex) Buy(market string, price, amount float64) (buy Buy, err error
 	}
 
 	err = json.Unmarshal(resp, &buy)
+
+	_ = p.observer.Observe("buy", parameters["currencyPair"], buy.OrderNumber)
+
 	return
 }
 
@@ -385,5 +388,8 @@ func (p *Poloniex) Sell(market string, price, amount float64) (sell Sell, err er
 	}
 
 	err = json.Unmarshal(resp, &sell)
+
+	_ = p.observer.Observe("buy", parameters["currencyPair"], sell.OrderNumber)
+
 	return
 }

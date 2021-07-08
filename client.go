@@ -35,6 +35,7 @@ type Poloniex struct {
 	key        string
 	secret     string
 	httpClient *http.Client
+	observer   OrderObserver
 }
 
 func NewPublicClient() *Poloniex {

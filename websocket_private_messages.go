@@ -93,7 +93,6 @@ type Trade struct {
 	Date          string  `json:"date"`
 	ClientOrderID string  `json:"clientOrderID"`
 	TradeTotal    float64 `json:"tradeTotal"`
-	TypeOrder     string  `json:"typeOrder"`
 	EpochMS       string  `json:"epochMS"`
 }
 
@@ -103,4 +102,14 @@ type Trade struct {
 type Kill struct {
 	OrderNumber   string
 	ClientOrderID string
+}
+
+type Fill struct {
+	OrderID  string
+	TradeID  string
+	Symbol   string
+	Price    float64
+	Size     float64
+	Side     string
+	FilledAt string
 }
