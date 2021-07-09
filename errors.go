@@ -23,6 +23,7 @@ const (
 	NewTradeError         = "[ERROR] MarketUpdate NewTrade Parsing %s"
 	WSAccountNotification = "[ERROR] Account Notification Parsing %s"
 	WSWrongOrderType      = "[ERROR] Account Notification Parsing: Wrong Order Type %s"
+	WrongTimeFormat       = "[ERROR] Wrong time format from Poloniex"
 	ServerError           = "[SERVER ERROR] Response: %s"
 )
 

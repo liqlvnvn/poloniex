@@ -5,13 +5,27 @@ Poloniex Websocket, Public and Private APIs.
 ## Related URL's
 
 - [Poloniex API docs](https://docs.poloniex.com/)
-- [Confluence]()
+- [Confluence]() // in-progress
 
+## Observer
+### WebsocketObserver
+Using when you need to collect filled trades.
+~~~go
+wsObserver := poloniex.NewWebsocketObserver()
+ws := poloniex.NewPrivateWSClient(wsObserver, apiKey, apiSecret)
+~~~
+### NilObserver
+Using when you don't need to collect filled trades.
+~~~go
+nilObserver := poloniex.NewNilObserver()
+ws := poloniex.NewPrivateWSClient(nilObserver, apiKey, apiSecret)
+~~~
 ## Websocket Private
 Create websocket client.
 #### NewAuthenticatedWSClient()
 ~~~go
-ws := poloniex.NewPrivateWSClient(apiKey, apiSecret)
+wsObserver := poloniex.NewWebsocketObserver()
+ws := poloniex.NewPrivateWSClient(wsObserver, apiKey, apiSecret)
 err := ws.Run()
 if err != nil {
     return
@@ -20,8 +34,10 @@ if err != nil {
 * Methods
   * SubscribeAccount()
   * UnsubscribeAccount()
+  * ListeningReports()
   
 #### SubscribeAccount()
+Subscribing on account notification.
 ~~~go
 err = ws.SubscribeAccount()
 if err != nil {
@@ -40,6 +56,7 @@ go func() {
 }()
 ~~~
 #### ListeningReports()
+Returning channel, which contain every completed trade.
 ~~~go
 ch, _ := ws.ListeningReports()
 for {
@@ -120,7 +137,7 @@ for {
 
 ## Public Api
 ~~~go
-poloniex, err := poloniex.NewClient(api_key, api_secret)
+poloniex := poloniex.NewPublicClient()
 ~~~
 * Public Api Methods
     * GetTickers()
@@ -149,7 +166,8 @@ const (
 )
 ~~~
 ~~~go
-poloniex, err := poloniex.NewClient(api_key, api_secret)
+wsObserver := poloniex.NewWebsocketObserver()
+polo := poloniex.NewPrivateClient(wsObserver, apiKey, apiSecret)
 ~~~ 
 
 * Trading Api Methods

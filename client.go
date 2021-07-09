@@ -35,16 +35,22 @@ type Poloniex struct {
 	key        string
 	secret     string
 	httpClient *http.Client
+	observer   OrderObserver
 }
 
-func NewClient(key, secret string) (client *Poloniex, err error) {
-	client = &Poloniex{
+func NewPublicClient() *Poloniex {
+	return &Poloniex{
+		httpClient: &http.Client{Timeout: time.Second * 10},
+	}
+}
+
+func NewPrivateClient(observer OrderObserver, key, secret string) *Poloniex {
+	return &Poloniex{
 		key:        key,
 		secret:     secret,
 		httpClient: &http.Client{Timeout: time.Second * 10},
+		observer:   observer,
 	}
-
-	return
 }
 
 // Create public api request.
@@ -170,8 +176,7 @@ func (p *Poloniex) tradingRequest(action string, parameters map[string]string,
 
 func (p *Poloniex) sign(formData string) (signature string, err error) {
 	if p.key == "" || p.secret == "" {
-		err = Error(SetAPIError)
-		return
+		panic(SetAPIError)
 	}
 
 	mac := hmac.New(sha512.New, []byte(p.secret))

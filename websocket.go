@@ -19,7 +19,10 @@ const (
 	TICKER  = 1002 // Ticker
 )
 
-const SUBSBUFFER = 256 // Subscriptions Buffer
+const (
+	// SUBSBUFFER is subscriptions buffer
+	SUBSBUFFER = 256
+)
 
 var (
 	channelsByName = make(map[string]int) // channels map by name
@@ -31,6 +34,7 @@ var (
 type WSClient struct {
 	key        string
 	secret     string
+	observer   OrderObserver
 	Subs       map[string]chan interface{} // subscriptions map
 	wsConn     *websocket.Conn             // websocket connection
 	wsMutex    *sync.Mutex                 // prevent race condition for websocket RW
@@ -46,17 +50,22 @@ func NewPublicWSClient() *WSClient {
 }
 
 // NewPrivateWSClient creates new web socket private client.
-func NewPrivateWSClient(key, secret string) *WSClient {
+func NewPrivateWSClient(observer OrderObserver, key, secret string) *WSClient {
 	return &WSClient{
-		key:     key,
-		secret:  secret,
-		Subs:    make(map[string]chan interface{}),
-		wsMutex: &sync.Mutex{},
+		key:      key,
+		secret:   secret,
+		observer: observer,
+		Subs:     make(map[string]chan interface{}),
+		wsMutex:  &sync.Mutex{},
 	}
 }
 
 // Run is connection client to poloniex websocket and start handling messages.
-func (ws *WSClient) Run() (err error) {
+func (ws *WSClient) Run() error {
+	if err := setChannelsID(); err != nil {
+		return err
+	}
+
 	logger.Info("connecting to poloniex websocket")
 
 	dialer := &websocket.Dialer{
@@ -65,19 +74,17 @@ func (ws *WSClient) Run() (err error) {
 
 	wsConn, _, err := dialer.Dial(pushAPIUrl, nil)
 	if err != nil {
-		return
+		return err
 	}
 
 	ws.wsConn = wsConn
-
-	if err = setChannelsID(); err != nil {
-		return
-	}
 
 	go func() {
 		for {
 			err := ws.wsHandler()
 			if err != nil {
+				logger.WithError(err).Error("websocket handler error")
+
 				wsConn, _, _ := dialer.Dial(pushAPIUrl, nil)
 				ws.wsConn = wsConn
 			}
@@ -108,10 +115,7 @@ func (ws *WSClient) writeMessage(msg []byte) error {
 }
 
 func setChannelsID() (err error) {
-	publicAPI, err := NewClient("", "")
-	if err != nil {
-		return err
-	}
+	publicAPI := NewPublicClient()
 
 	tickers, err := publicAPI.GetTickers()
 	if err != nil {
@@ -247,8 +251,7 @@ func (ws *WSClient) unsubscribe(chName string) (err error) {
 
 func (ws *WSClient) sign(formData string) (signature string, err error) {
 	if ws.key == "" || ws.secret == "" {
-		err = Error(SetAPIError)
-		return
+		panic(SetAPIError)
 	}
 
 	mac := hmac.New(sha512.New, []byte(ws.secret))
@@ -259,4 +262,17 @@ func (ws *WSClient) sign(formData string) (signature string, err error) {
 
 	signature = hex.EncodeToString(mac.Sum(nil))
 	return
+}
+
+func (ws *WSClient) Close() error {
+	for {
+		if ws.observer != nil {
+			if err := ws.observer.Lock(); err != nil {
+				continue
+			}
+		}
+		if err := ws.wsConn.Close(); err != nil {
+			return err
+		}
+	}
 }

@@ -87,21 +87,39 @@ type AccountUpdate struct {
 }
 
 // ListeningReports make subscription to account executed orders notification.
-func (ws *WSClient) ListeningReports() (ch chan Trade, err error) {
+func (ws *WSClient) ListeningReports() (ch chan Fill, err error) {
 	if _, isClientSubscribedToAccountNotification := ws.Subs["ACCOUNT"]; !isClientSubscribedToAccountNotification {
 		if err := ws.subscribeToAccountNotification(ACCOUNT, "ACCOUNT"); err != nil {
 			return nil, err
 		}
 	}
 
-	ch = make(chan Trade, SUBSBUFFER)
+	ch = make(chan Fill, SUBSBUFFER)
 
-	go func(ch chan Trade) {
+	go func(ch chan Fill) {
 		for updates := range ws.Subs["ACCOUNT"] {
 			for _, msg := range updates.([]AccountUpdate) {
 				switch msg.TypeUpdate {
 				case "Trade":
-					ch <- msg.Data.(Trade)
+					trade := msg.Data.(Trade)
+					if ws.observer.IsObservable(trade.OrderNumber) {
+						servObj, err := ws.observer.Items(trade.OrderNumber)
+						if err != nil {
+							return
+						}
+
+						f := Fill{
+							trade.OrderNumber,
+							trade.TradeID,
+							servObj.symbol,
+							trade.Rate,
+							trade.Amount,
+							servObj.side,
+							trade.Date,
+						}
+
+						ch <- f
+					}
 				default:
 					continue
 				}
@@ -253,17 +271,20 @@ func convertArgsToAccountNotification(args []interface{}) (res []AccountUpdate, 
 
 			trade.TotalFee, err = strconv.ParseFloat(vals[7].(string), 64)
 			if err != nil {
-				err = Error(WSAccountNotification, "trade.TotalFee")
-				return
+				return nil, Error(WSAccountNotification, "trade.TotalFee")
 			}
 
-			trade.Date = fmt.Sprintf("%v", vals[8])
+			date, err := parseStringToTime(fmt.Sprintf("%v", vals[8]))
+			if err != nil {
+				return nil, Error(WSAccountNotification, err)
+			}
+			trade.Date = date
+
 			trade.ClientOrderID = fmt.Sprintf("%v", vals[9])
 
 			trade.TradeTotal, err = strconv.ParseFloat(vals[10].(string), 64)
 			if err != nil {
-				err = Error(WSAccountNotification, "trade.TradeTotal")
-				return
+				return nil, Error(WSAccountNotification, "trade.TradeTotal")
 			}
 
 			trade.EpochMS = fmt.Sprintf("%v", vals[11])

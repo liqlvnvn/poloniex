@@ -13,7 +13,9 @@ const (
 )
 
 func main() {
-	ws := poloniex.NewPrivateWSClient(apiKey, apiSecret)
+	wsObserver := poloniex.NewWebsocketObserver()
+
+	ws := poloniex.NewPrivateWSClient(wsObserver, apiKey, apiSecret)
 	err := ws.Run()
 	if err != nil {
 		return

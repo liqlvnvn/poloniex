@@ -13,7 +13,7 @@ const (
 )
 
 func main() {
-	poloniex, err := polo.NewClient(api_key, api_secret)
+	poloniex := polo.NewPublicClient()
 
 	// resp, err := poloniex.GetTickers()
 	// resp, err := poloniex.Get24hVolumes()
