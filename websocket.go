@@ -19,7 +19,10 @@ const (
 	TICKER  = 1002 // Ticker
 )
 
-const SUBSBUFFER = 256 // Subscriptions Buffer
+const (
+	// SUBSBUFFER is subscriptions buffer
+	SUBSBUFFER = 256
+)
 
 var (
 	channelsByName = make(map[string]int) // channels map by name
@@ -58,13 +61,12 @@ func NewPrivateWSClient(observer OrderObserver, key, secret string) *WSClient {
 }
 
 // Run is connection client to poloniex websocket and start handling messages.
-func (ws *WSClient) Run() (err error) {
-	logger.Info("connecting to poloniex websocket")
-	if err := ws.observer.Lock(); err != nil {
-		// time.Sleep(reconnectDelay)
-		time.Sleep(2 * time.Second)
-		// continue
+func (ws *WSClient) Run() error {
+	if err := setChannelsID(); err != nil {
+		return err
 	}
+
+	logger.Info("connecting to poloniex websocket")
 
 	dialer := &websocket.Dialer{
 		HandshakeTimeout: time.Minute,
@@ -72,21 +74,17 @@ func (ws *WSClient) Run() (err error) {
 
 	wsConn, _, err := dialer.Dial(pushAPIUrl, nil)
 	if err != nil {
-		return
+		return err
 	}
 
 	ws.wsConn = wsConn
-
-	if err = setChannelsID(); err != nil {
-		return
-	}
-
-	ws.observer.Unlock()
 
 	go func() {
 		for {
 			err := ws.wsHandler()
 			if err != nil {
+				logger.WithError(err).Error("websocket handler error")
+
 				wsConn, _, _ := dialer.Dial(pushAPIUrl, nil)
 				ws.wsConn = wsConn
 			}
@@ -253,8 +251,7 @@ func (ws *WSClient) unsubscribe(chName string) (err error) {
 
 func (ws *WSClient) sign(formData string) (signature string, err error) {
 	if ws.key == "" || ws.secret == "" {
-		err = Error(SetAPIError)
-		return
+		panic(SetAPIError)
 	}
 
 	mac := hmac.New(sha512.New, []byte(ws.secret))
@@ -265,4 +262,17 @@ func (ws *WSClient) sign(formData string) (signature string, err error) {
 
 	signature = hex.EncodeToString(mac.Sum(nil))
 	return
+}
+
+func (ws *WSClient) Close() error {
+	for {
+		if ws.observer != nil {
+			if err := ws.observer.Lock(); err != nil {
+				continue
+			}
+		}
+		if err := ws.wsConn.Close(); err != nil {
+			return err
+		}
+	}
 }

@@ -176,8 +176,7 @@ func (p *Poloniex) tradingRequest(action string, parameters map[string]string,
 
 func (p *Poloniex) sign(formData string) (signature string, err error) {
 	if p.key == "" || p.secret == "" {
-		err = Error(SetAPIError)
-		return
+		panic(SetAPIError)
 	}
 
 	mac := hmac.New(sha512.New, []byte(p.secret))

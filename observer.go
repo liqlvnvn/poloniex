@@ -7,7 +7,7 @@ import (
 
 type OrderObserver interface {
 	Observe(side, symbol, orderID string) error
-	Items(orderID string) (serverableObject, error)
+	Items(orderID string) (ServerableObject, error)
 	// TODO: Delete after order completely fill.
 	Delete(orderID string) error
 	Lock() error
@@ -15,7 +15,7 @@ type OrderObserver interface {
 	IsObservable(orderID string) bool
 }
 
-type serverableObject struct {
+type ServerableObject struct {
 	side    string
 	symbol  string
 	orderID string
@@ -24,14 +24,14 @@ type serverableObject struct {
 // WebsocketObserver реализация OrderObserver для Websocket.
 // Используется для синхронизации WS & REST
 type WebsocketObserver struct {
-	items   map[string]serverableObject
+	items   map[string]ServerableObject
 	itemsMu sync.RWMutex
 	mu      sync.Mutex
 }
 
 func NewWebsocketObserver() *WebsocketObserver {
 	return &WebsocketObserver{
-		items: make(map[string]serverableObject),
+		items: make(map[string]ServerableObject),
 	}
 }
 
@@ -51,12 +51,12 @@ func (w *WebsocketObserver) Observe(side, symbol, orderID string) error {
 
 	if _, ok := w.items[orderID]; ok {
 		w.itemsMu.RUnlock()
-		return fmt.Errorf("already exists: %d", orderID)
+		return fmt.Errorf("already exists: %v", orderID)
 	}
 
 	w.itemsMu.RUnlock()
 	w.itemsMu.Lock()
-	w.items[orderID] = serverableObject{
+	w.items[orderID] = ServerableObject{
 		side:    side,
 		symbol:  symbol,
 		orderID: orderID,
@@ -66,23 +66,23 @@ func (w *WebsocketObserver) Observe(side, symbol, orderID string) error {
 	return nil
 }
 
-func (w *WebsocketObserver) Items(orderID string) (serverableObject, error) {
+func (w *WebsocketObserver) Items(orderID string) (ServerableObject, error) {
 	w.itemsMu.RLock()
 
 	if value, ok := w.items[orderID]; ok {
 		w.itemsMu.RUnlock()
 		return value, nil
-	} else {
-		w.itemsMu.RUnlock()
-		return serverableObject{}, fmt.Errorf("orderID %v not registered", orderID)
 	}
+
+	w.itemsMu.RUnlock()
+	return ServerableObject{}, fmt.Errorf("orderID %v not registered", orderID)
 }
 
 func (w *WebsocketObserver) Delete(orderID string) error {
 	w.itemsMu.RLock()
 	if _, ok := w.items[orderID]; !ok {
 		w.itemsMu.RUnlock()
-		return fmt.Errorf("not found: %d", orderID)
+		return fmt.Errorf("not found: %v", orderID)
 	}
 	w.itemsMu.RUnlock()
 
@@ -93,8 +93,7 @@ func (w *WebsocketObserver) Delete(orderID string) error {
 	return nil
 }
 
-// Lock
-// TODO: Сделать кастомный Locker, чтобы возвращать ошибку, что блокировка длится дольше T
+// Lock TODO: Сделать кастомный Locker, чтобы возвращать ошибку, что блокировка длится дольше T
 func (w *WebsocketObserver) Lock() error {
 	w.mu.Lock()
 	return nil
@@ -111,7 +110,7 @@ func NewNilObserver() *NilObserver {
 	return &NilObserver{}
 }
 
-func (n *NilObserver) Observe(_ string, _ string, _ int64) error {
+func (n *NilObserver) Observe(_, _ string, _ int64) error {
 	return nil
 }
 
