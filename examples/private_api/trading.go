@@ -7,12 +7,14 @@ import (
 )
 
 const (
-	api_key    = ""
-	api_secret = ""
+	apiKey    = ""
+	apiSecret = ""
 )
 
 func main() {
-	poloniex := polo.NewPrivateClient(api_key, api_secret)
+	wsObserver := polo.NewWebsocketObserver()
+
+	poloniex := polo.NewPrivateClient(wsObserver, apiKey, apiSecret)
 
 	resp, err := poloniex.GetBalances()
 	// resp, err := poloniex.GetCompleteBalances()

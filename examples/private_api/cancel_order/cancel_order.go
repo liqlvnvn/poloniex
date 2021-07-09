@@ -12,7 +12,9 @@ const (
 )
 
 func main() {
-	polo := poloniex.NewPrivateClient(apiKey, apiSecret)
+	wsObserver := poloniex.NewWebsocketObserver()
+
+	polo := poloniex.NewPrivateClient(wsObserver, apiKey, apiSecret)
 
 	resp, _ := polo.GetBalances()
 	fmt.Println("BTT", resp["BTT"], "\nUSDT", resp["USDT"])

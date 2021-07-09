@@ -13,13 +13,15 @@ const (
 )
 
 func main() {
-	polo := poloniex.NewPrivateClient(apiKey, apiSecret)
+	wsObserver := poloniex.NewWebsocketObserver()
+
+	polo := poloniex.NewPrivateClient(wsObserver, apiKey, apiSecret)
 
 	resp, _ := polo.GetBalances()
 	fmt.Println("BTT", resp["BTT"], "\nUSDT", resp["USDT"])
 
 	fmt.Println(time.Now(), "starting buy")
-	buy, err := polo.Sell("USDT_BTT", 0.00258823, 450.0)
+	buy, err := polo.Sell("USDT_BTT", 0.00258804, 450.0)
 	if err != nil {
 		fmt.Println("error while tried to buy:", err)
 		return
