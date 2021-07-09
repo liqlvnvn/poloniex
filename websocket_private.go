@@ -271,17 +271,20 @@ func convertArgsToAccountNotification(args []interface{}) (res []AccountUpdate, 
 
 			trade.TotalFee, err = strconv.ParseFloat(vals[7].(string), 64)
 			if err != nil {
-				err = Error(WSAccountNotification, "trade.TotalFee")
-				return
+				return nil, Error(WSAccountNotification, "trade.TotalFee")
 			}
 
-			trade.Date = fmt.Sprintf("%v", vals[8])
+			date, err := parseStringToTime(fmt.Sprintf("%v", vals[8]))
+			if err != nil {
+				return nil, Error(WSAccountNotification, err)
+			}
+			trade.Date = date
+
 			trade.ClientOrderID = fmt.Sprintf("%v", vals[9])
 
 			trade.TradeTotal, err = strconv.ParseFloat(vals[10].(string), 64)
 			if err != nil {
-				err = Error(WSAccountNotification, "trade.TradeTotal")
-				return
+				return nil, Error(WSAccountNotification, "trade.TradeTotal")
 			}
 
 			trade.EpochMS = fmt.Sprintf("%v", vals[11])

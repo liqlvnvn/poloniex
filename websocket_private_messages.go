@@ -1,5 +1,7 @@
 package poloniex
 
+import "time"
+
 // List of constants for parsing poloniex messages.
 const (
 	OrderTypeSell = 0
@@ -83,17 +85,17 @@ type MarginPositionUpdate struct {
 // The funding type represents the funding used for the trade,
 // which may be 0 (exchange wallet), 1 (borrowed funds), 2 (margin funds), or 3 (lending funds).
 type Trade struct {
-	TradeID       string  `json:"tradeID"`
-	Rate          float64 `json:"rate"`
-	Amount        float64 `json:"amount"`
-	FeeMultiplier float64 `json:"feeMultiplier"`
-	FundingType   string  `json:"fundingType"`
-	OrderNumber   string  `json:"orderNumber"`
-	TotalFee      float64 `json:"totalFee"`
-	Date          string  `json:"date"`
-	ClientOrderID string  `json:"clientOrderID"`
-	TradeTotal    float64 `json:"tradeTotal"`
-	EpochMS       string  `json:"epochMS"`
+	TradeID       string    `json:"tradeID"`
+	Rate          float64   `json:"rate"`
+	Amount        float64   `json:"amount"`
+	FeeMultiplier float64   `json:"feeMultiplier"`
+	FundingType   string    `json:"fundingType"`
+	OrderNumber   string    `json:"orderNumber"`
+	TotalFee      float64   `json:"totalFee"`
+	Date          time.Time `json:"date"`
+	ClientOrderID string    `json:"clientOrderID"`
+	TradeTotal    float64   `json:"tradeTotal"`
+	EpochMS       string    `json:"epochMS"`
 }
 
 // Kill represent "k" messages which indicating that an API order has been killed,
@@ -111,5 +113,5 @@ type Fill struct {
 	Price    float64
 	Size     float64
 	Side     string
-	FilledAt string
+	FilledAt time.Time
 }
