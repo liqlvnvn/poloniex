@@ -60,6 +60,11 @@ func NewPrivateWSClient(observer OrderObserver, key, secret string) *WSClient {
 // Run is connection client to poloniex websocket and start handling messages.
 func (ws *WSClient) Run() (err error) {
 	logger.Info("connecting to poloniex websocket")
+	if err := ws.observer.Lock(); err != nil {
+		// time.Sleep(reconnectDelay)
+		time.Sleep(2 * time.Second)
+		// continue
+	}
 
 	dialer := &websocket.Dialer{
 		HandshakeTimeout: time.Minute,
@@ -75,6 +80,8 @@ func (ws *WSClient) Run() (err error) {
 	if err = setChannelsID(); err != nil {
 		return
 	}
+
+	ws.observer.Unlock()
 
 	go func() {
 		for {

@@ -44,11 +44,12 @@ func NewPublicClient() *Poloniex {
 	}
 }
 
-func NewPrivateClient(key, secret string) *Poloniex {
+func NewPrivateClient(observer OrderObserver, key, secret string) *Poloniex {
 	return &Poloniex{
 		key:        key,
 		secret:     secret,
 		httpClient: &http.Client{Timeout: time.Second * 10},
+		observer:   observer,
 	}
 }
 

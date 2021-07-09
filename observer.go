@@ -8,6 +8,7 @@ import (
 type OrderObserver interface {
 	Observe(side, symbol, orderID string) error
 	Items(orderID string) (serverableObject, error)
+	// TODO: Delete after order completely fill.
 	Delete(orderID string) error
 	Lock() error
 	Unlock()
@@ -105,6 +106,10 @@ func (w *WebsocketObserver) Unlock() {
 
 // NilObserver пустая реализации без синхронизаций. Используется, если получение трейдов из WebSocket не нужен.
 type NilObserver struct{}
+
+func NewNilObserver() *NilObserver {
+	return &NilObserver{}
+}
 
 func (n *NilObserver) Observe(_ string, _ string, _ int64) error {
 	return nil
